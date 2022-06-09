@@ -11,8 +11,8 @@ export async function signUp(req, res) {
     try {
         const {name, email, password} = req.body;
 
-        const existingCustomer = await connection.query("SELECT * FROM users WHERE email = $1", [email]);
-        if(existingCustomer.rowCount > 0) return res.status(409).send("User already exists.");
+        const existingUser = await connection.query("SELECT * FROM users WHERE email = $1", [email]);
+        if(existingUser.rowCount > 0) return res.status(409).send("User already exists.");
 
         const SALT = 14;
         await connection.query("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)", [name, email, bcrypt.hashSync(password, SALT)]);

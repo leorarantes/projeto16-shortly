@@ -16,8 +16,8 @@ CREATE TABLE "sessions" (
 CREATE TABLE "urls" (
     "id" SERIAL PRIMARY KEY,
     "userId" INTEGER NOT NULL REFERENCES "users"("id"),
-    "originalUrl" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
     "shortUrl" TEXT UNIQUE NOT NULL,
-    "views" INTEGER NOT NULL DEFAULT 0,
+    "visitCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
