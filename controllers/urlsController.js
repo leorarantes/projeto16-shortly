@@ -57,3 +57,23 @@ export async function getUserUrls(req, res) {
         res.status(500).send("Error recovering user urls.");
     }
 }
+
+export async function openShortUrl(req, res) {
+    try {
+        const { shortUrl } = req.params;
+        const existingUrl = await connection.query("SELECT * FROM urls WHERE \"shortUrl\" = $1", [shortUrl]);
+
+        if(existingUrl.rowCount > 0) {
+            const visitCountPlusOne = existingUrl.rows[0].visitCount + 1;
+            await connection.query("UPDATE urls SET \"visitCount\" = $1 WHERE \"shortUrl\" = $2", [visitCountPlusOne, shortUrl]);
+            
+            res.redirect(existingUrl.rows[0].url);
+        }
+        else {
+            res.sendStatus(404);
+        }
+    } catch (error) {
+        console.log("Error opening short url.", error);
+        res.status(500).send("Error opening short url.");
+    }
+}
