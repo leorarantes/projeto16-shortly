@@ -10,7 +10,8 @@ CREATE TABLE "sessions" (
     "id" SERIAL PRIMARY KEY,
     "userId" INTEGER NOT NULL REFERENCES "users"("id"),
     "token" TEXT NOT NULL,
-    "createdAt" FLOAT NOT NULL
+    "lastStatus" FLOAT NOT NULL,
+    "createdAt" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE "urls" (

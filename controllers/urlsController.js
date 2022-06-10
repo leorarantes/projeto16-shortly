@@ -45,6 +45,24 @@ export async function openShortUrl(req, res) {
     }
 }
 
+export async function getUrl(req, res) {
+    try {
+        const urlId = parseInt(req.params.id);
+
+        const existingUrl = await connection.query("SELECT * FROM urls WHERE id = $1", [urlId]);
+        if(existingUrl.rowCount > 0) {
+            const {id, shortUrl, url} = existingUrl.rows[0];
+            res.status(200).send({id, shortUrl, url});
+        }
+        else {
+            res.sendStatus(404);
+        }
+    } catch (error) {
+        console.log("Error recovering url.", error);
+        res.status(500).send("Error recovering url.");
+    }
+}
+
 export async function deleteUrl(req, res) {
     try {
         const urlId = parseInt(req.params.id);

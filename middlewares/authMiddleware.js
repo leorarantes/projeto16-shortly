@@ -11,7 +11,8 @@ export async function validateToken(req, res, next) {
 
         if (!session) return res.status(401).send("No session.");
 
-        const timeDifference = parseFloat((Date.now()/60000).toFixed(1)) - session.createdAt;
+        const now = parseFloat((Date.now()/60000).toFixed(1));
+        const timeDifference = now - session.lastStatus;
         if (timeDifference > 60) {
             await connection.query("DELETE FROM sessions WHERE \"userId\" = $1", [session.userId]);
             return res.status(401).send("Session expired.");
@@ -19,6 +20,8 @@ export async function validateToken(req, res, next) {
 
         const user = await connection.query("SELECT * FROM users WHERE id = $1", [session.userId]);
         if (!user) return res.sendStatus(400);
+
+        await connection.query("UPDATE sessions SET \"lastStatus\" = $1 WHERE id = $2", [now, session.id]);
 
         res.locals.user = user.rows[0];
 

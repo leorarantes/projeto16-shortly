@@ -37,8 +37,8 @@ export async function signIn(req, res) {
         if (!user) return res.sendStatus(401);
         if (user && bcrypt.compareSync(password, user.password)) {
             const token = uuid();
-            const createdAt = parseFloat((Date.now()/60000).toFixed(1));
-            await connection.query("INSERT INTO sessions (\"userId\", token, \"createdAt\") VALUES ($1, $2, $3)", [user.id, token, createdAt]);
+            const now = parseFloat((Date.now()/60000).toFixed(1));
+            await connection.query("INSERT INTO sessions (\"userId\", token, \"lastStatus\") VALUES ($1, $2, $3)", [user.id, token, now]);
             
             res.status(200).send({token});
         } else {
