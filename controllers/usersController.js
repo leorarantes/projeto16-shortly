@@ -10,20 +10,13 @@ export async function getUserUrls(req, res) {
         if(userId !== user.id) return res.sendStatus(401);
 
         const urls = await connection.query("SELECT * FROM urls WHERE \"userId\" = $1", [userId]);
-
-        let visitCountSum = 0;
-        const urlsAux = urls.rows.map(element => {
-            const {id, url, shortUrl, visitCount} = element;
-            visitCountSum += visitCount;
-
-            return ({id, shortUrl, url, visitCount});
-        });
+        const visitCountSum = await connection.query("SELECT SUM(urls.\"visitCount\") FROM urls WHERE \"userId\" = $1 GROUP BY urls.\"userId\"", [userId]);
 
         const resBody = {
             id: userId,
             name: user.name,
-            visitCount: visitCountSum,
-            shortenedUrls: urlsAux
+            visitCount: parseInt(visitCountSum.rows[0].sum),
+            shortenedUrls: urls.rows
         };
 
         res.status(200).send(resBody);
