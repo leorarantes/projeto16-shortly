@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 import authRouter from "./routes/authRouter.js";
 import urlsRouter from "./routes/urlsRouter.js";
+import usersRouter from "./routes/usersRouter.js";
 
 // config
 const app = express();
@@ -15,6 +16,7 @@ dotenv.config();
 // routes
 app.use(authRouter);
 app.use(urlsRouter);
+app.use(usersRouter);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(chalk.bold.green(`Server is running on port ${port}.`)));

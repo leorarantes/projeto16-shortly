@@ -13,7 +13,7 @@ export async function validateToken(req, res, next) {
 
         const timeDifference = parseFloat((Date.now()/60000).toFixed(1)) - session.createdAt;
         if (timeDifference > 60) {
-            await connection.query("DELETE FROM sessions where \"userId\" = $1", [session.userId]);
+            await connection.query("DELETE FROM sessions WHERE \"userId\" = $1", [session.userId]);
             return res.status(401).send("Session expired.");
         }
 
