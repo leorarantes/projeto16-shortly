@@ -2,7 +2,8 @@ import bcrypt from "bcrypt";
 import { v4 as uuid } from "uuid";
 
 import { authSignInSchema, authSignUpSchema } from "../schemas/authSchema.js";
-import connection from "../database.js";
+import usersRepositories from "../repositories/usersRepositories.js";
+import sessionsRepositories from "../repositories/sessionsRepositories.js";
 
 export async function signUp(req, res) {
     const { error } = authSignUpSchema.validate(req.body);
@@ -11,11 +12,11 @@ export async function signUp(req, res) {
     try {
         const {name, email, password} = req.body;
 
-        const existingUser = await connection.query("SELECT * FROM users WHERE email = $1", [email]);
+        const existingUser = await usersRepositories.getUser({ email })
         if(existingUser.rowCount > 0) return res.status(409).send("User already exists.");
 
         const SALT = 14;
-        await connection.query("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)", [name, email, bcrypt.hashSync(password, SALT)]);
+        await usersRepositories.insertUser(name, email, bcrypt.hashSync(password, SALT));
 
         res.sendStatus(201);
     } catch (error) {
@@ -31,14 +32,11 @@ export async function signIn(req, res) {
     try {
         const {email, password} = req.body;
 
-        const users = await connection.query("SELECT * FROM users");
-        const user = users.rows.find(element => element.email === email);
-
-        if (!user) return res.sendStatus(401);
-        if (user && bcrypt.compareSync(password, user.password)) {
+        const existingUser = await usersRepositories.getUser({ email })
+        if (existingUser.rowCount === 0) return res.sendStatus(401);
+        if (existingUser.rowCount > 0 && bcrypt.compareSync(password, existingUser.rows[0].password)) {
             const token = uuid();
-            const now = parseFloat((Date.now()/60000).toFixed(1));
-            await connection.query("INSERT INTO sessions (\"userId\", token, \"lastStatus\") VALUES ($1, $2, $3)", [user.id, token, now]);
+            await sessionsRepositories.insertSession(existingUser.rows[0].id, token);
             
             res.status(200).send({token});
         } else {

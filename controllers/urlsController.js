@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 
-import connection from "../database.js";
 import { urlSchema } from "../schemas/urlSchema.js";
+import urlsRepositories from "../repositories/urlsRepositories.js";
 
 export async function shortenUrl(req, res) {
     const { error } = urlSchema.validate(req.body);
@@ -9,13 +9,13 @@ export async function shortenUrl(req, res) {
 
     try {
         const { user } = res.locals;
-        const existingUrl = await connection.query("SELECT * FROM urls WHERE \"userId\" = $1 AND url = $2", [user.id, req.body.url]);
+        const existingUrl = await urlsRepositories.getUrl({ userId: user.id, url: req.body.url });
         if(existingUrl.rowCount > 0) {
             res.status(201).send({shortUrl: existingUrl.rows[0].shortUrl});
         }
         else {
             const shortUrl = nanoid();
-            await connection.query("INSERT INTO urls (\"userId\", url, \"shortUrl\") VALUES ($1, $2, $3)", [user.id, req.body.url, shortUrl]);
+            await urlsRepositories.insertUrl(user.id, req.body.url, shortUrl);
 
             res.status(201).send({shortUrl});
         }
@@ -28,11 +28,11 @@ export async function shortenUrl(req, res) {
 export async function openShortUrl(req, res) {
     try {
         const { shortUrl } = req.params;
-        const existingUrl = await connection.query("SELECT * FROM urls WHERE \"shortUrl\" = $1", [shortUrl]);
+        const existingUrl = await urlsRepositories.getUrl({ shortUrl });
 
         if(existingUrl.rowCount > 0) {
             const visitCountPlusOne = existingUrl.rows[0].visitCount + 1;
-            await connection.query("UPDATE urls SET \"visitCount\" = $1 WHERE \"shortUrl\" = $2", [visitCountPlusOne, shortUrl]);
+            await urlsRepositories.updateVisitCount(visitCountPlusOne, shortUrl)
             
             res.redirect(existingUrl.rows[0].url);
         }
@@ -49,7 +49,7 @@ export async function getUrl(req, res) {
     try {
         const urlId = parseInt(req.params.id);
 
-        const existingUrl = await connection.query("SELECT * FROM urls WHERE id = $1", [urlId]);
+        const existingUrl = await urlsRepositories.getUrl({ urlId });
         if(existingUrl.rowCount > 0) {
             const {id, shortUrl, url} = existingUrl.rows[0];
             res.status(200).send({id, shortUrl, url});
@@ -68,11 +68,11 @@ export async function deleteUrl(req, res) {
         const urlId = parseInt(req.params.id);
         const { user } = res.locals;
 
-        const existingUrl = await connection.query("SELECT * FROM urls WHERE id = $1", [urlId]);
+        const existingUrl = await urlsRepositories.getUrl({ urlId });
         if(existingUrl.rowCount === 0) return res.sendStatus(404);
         if(existingUrl.rows[0].userId !== user.id) return res.sendStatus(401);
 
-        await connection.query("DELETE FROM urls WHERE id = $1", [urlId]);
+        await urlsRepositories.deleteUrl(urlId);
 
         res.sendStatus(204);
     } catch (error) {

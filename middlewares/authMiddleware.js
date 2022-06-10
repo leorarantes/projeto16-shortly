@@ -1,4 +1,5 @@
-import connection from "../database.js";
+import sessionsRepositories from "../repositories/sessionsRepositories.js";
+import usersRepositories from "../repositories/usersRepositories.js";
 
 export async function validateToken(req, res, next) {
     const { authorization } = req.headers;
@@ -6,22 +7,21 @@ export async function validateToken(req, res, next) {
     if (!token) return res.status(401).send("No token.");
 
     try {
-        const sessions = await connection.query("SELECT * FROM sessions");
-        const session = sessions.rows.find(element => element.token === token);
+        const session = await sessionsRepositories.getSession(token);
 
-        if (!session) return res.status(401).send("No session.");
+        if(session.rowCount === 0) return res.status(401).send("No session.");
 
         const now = parseFloat((Date.now()/60000).toFixed(1));
-        const timeDifference = now - session.lastStatus;
+        const timeDifference = now - session.rows[0].lastStatus;
         if (timeDifference > 60) {
-            await connection.query("DELETE FROM sessions WHERE \"userId\" = $1", [session.userId]);
+            await sessionsRepositories.deleteSessions(session.rows[0].userId);
             return res.status(401).send("Session expired.");
         }
 
-        const user = await connection.query("SELECT * FROM users WHERE id = $1", [session.userId]);
-        if (!user) return res.sendStatus(400);
+        const user = await usersRepositories.getUser({ userId: session.rows[0].userId })
+        if (user.rowCount === 0) return res.sendStatus(400);
 
-        await connection.query("UPDATE sessions SET \"lastStatus\" = $1 WHERE id = $2", [now, session.id]);
+        await sessionsRepositories.updateSessions(session.rows[0].id);
 
         res.locals.user = user.rows[0];
 
